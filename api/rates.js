@@ -1,35 +1,30 @@
-// This tells Node.js we need tools for handling files and paths.
-const fs = require('fs').promises;
-const path = require('path');
+import { kv } from '@vercel/kv';
 
-// This is where we will store our data. Vercel provides a temporary '/tmp' folder we can use.
-const dataPath = path.join('/tmp', 'rates.json');
+export default async function handler(req, res) {
+    // Set CORS headers to allow requests from any origin.
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-// This is the main function that Vercel will run when someone visits .../api/rates
-module.exports = async (req, res) => {
+    // Handle preflight OPTIONS request for CORS.
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+    
     try {
-        // These headers are important! They tell browsers that it's okay for your
-        // frontend website (on a different domain) to request data from this API.
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        
-        // Read the contents of the rates.json file.
-        const data = await fs.readFile(dataPath, 'utf8');
-        const rates = JSON.parse(data); // Turn the text into a real JavaScript object.
+        // Fetch the stored rates data from Vercel KV.
+        const data = await kv.get('current_rates');
 
-        // Send the data back as a JSON response.
-        res.status(200).json(rates);
+        if (!data) {
+            return res.status(404).json({ message: 'Rates not found. Please update them via the admin panel.' });
+        }
+
+        // Send the data back to the client.
+        return res.status(200).json(data);
 
     } catch (error) {
-        // If the file doesn't exist yet (e.g., first time running), we send back some default data
-        // so the frontend doesn't crash.
-        if (error.code === 'ENOENT') {
-            return res.status(200).json({
-                success: true,
-                message: "No rates uploaded yet. Serving default data.",
-                quotes: { "USDALL": 93.50 }
-            });
-        }
-        // If any other error happens, we send a server error message.
-        res.status(500).json({ success: false, message: 'Internal Server Error' });
+        console.error('Error fetching rates from KV:', error);
+        return res.status(500).json({ message: 'Failed to fetch rates.' });
     }
-};
+}
+
