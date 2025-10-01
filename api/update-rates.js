@@ -1,6 +1,10 @@
-import { kv } from '@vercel/kv';
+import { Redis } from '@upstash/redis';
 
-// A robust helper function to manually read and parse the raw request body.
+// Initialize the Redis client directly.
+// It will automatically find the connection keys from your Vercel project settings.
+const redis = Redis.fromEnv();
+
+// Helper function to safely read and parse the raw request body.
 function getJsonBody(req) {
   return new Promise((resolve, reject) => {
     let body = '';
@@ -22,12 +26,11 @@ function getJsonBody(req) {
 }
 
 export default async function handler(req, res) {
-    // Set CORS headers for security
+    // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-    // Handle the preflight OPTIONS request
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
@@ -41,7 +44,7 @@ export default async function handler(req, res) {
         const { rates } = body;
 
         if (!rates || Object.keys(rates).length === 0) {
-            return res.status(400).json({ message: 'No valid rates data found in the request.' });
+            return res.status(400).json({ message: 'No valid rates data in request.' });
         }
 
         const dataToSave = {
@@ -49,13 +52,14 @@ export default async function handler(req, res) {
             rates: rates,
         };
         
-        // Save the final data to the Vercel KV store.
-        await kv.set('current_rates', JSON.stringify(dataToSave));
+        // Save the data to Upstash Redis using the direct SDK.
+        await redis.set('current_rates', JSON.stringify(dataToSave));
 
-        return res.status(200).json({ message: 'Rates updated successfully in Vercel KV!' });
+        return res.status(200).json({ message: 'Rates updated successfully!' });
 
     } catch (error) {
         console.error('Error during rate update:', error.message);
         return res.status(400).json({ message: error.message || 'An internal server error occurred.' });
     }
 }
+
