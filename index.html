@@ -1,30 +1,28 @@
-<!-- The HTML part is just a simple form -->
-<h1>Upload New Rates Photo</h1>
-<input type="file" id="photoInput" accept="image/*">
-<button onclick="uploadPhoto()">Upload and Process</button>
-<div id="status"></div>
-
-<!-- The JavaScript part handles the logic -->
-<script>
-    async function uploadPhoto() {
-        const fileInput = document.getElementById('photoInput');
-        const statusDiv = document.getElementById('status');
-        
-        // ... (code to check if a file is selected) ...
-
-        const file = fileInput.files[0];
-        // FormData is the standard way to send files over the web.
-        const formData = new FormData();
-        formData.append('ratePhoto', file);
-
-        statusDiv.textContent = 'Uploading and processing...';
-
-        // This is the key part: it sends the image data to our backend endpoint.
-        const response = await fetch('/api/update-rates', {
-            method: 'POST',
-            body: formData,
-        });
-        
-        // ... (code to show success or error message) ...
-    }
-</script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kursi Kembimit API</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f7f7f7; }
+        .container { text-align: center; padding: 40px; background-color: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1 { color: #111; font-weight: 600; }
+        p { color: #555; }
+        a { color: #007aff; text-decoration: none; font-weight: 500; }
+        a:hover { text-decoration: underline; }
+        .links { margin-top: 20px; }
+        .links a { margin: 0 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome to the Kursi Kembimit API</h1>
+        <p>The API is running successfully.</p>
+        <div class="links">
+            <a href="/api/rates">View Live Rates</a>
+            <a href="/admin">Go to Admin Uploader</a>
+        </div>
+    </div>
+</body>
+</html>
