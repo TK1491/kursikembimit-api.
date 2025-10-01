@@ -1,33 +1,61 @@
-// ULTIMATE DEBUGGING VERSION
-// This code does NOT read the request body. It only checks the request method
-// and immediately sends a response to test if the function can run at all.
+import { kv } from '@vercel/kv';
+
+// A robust helper function to manually read and parse the raw request body.
+function getJsonBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+    req.on('error', err => {
+      reject(err);
+    });
+    req.on('end', () => {
+      if (!body) return reject(new Error('Request body is empty.'));
+      try {
+        resolve(JSON.parse(body));
+      } catch (error) {
+        reject(new Error('Invalid JSON format.'));
+      }
+    });
+  });
+}
 
 export default async function handler(req, res) {
-    // Set CORS headers to allow requests from any origin
+    // Set CORS headers for security
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-    // Vercel sends an OPTIONS request first for CORS preflight. We need to handle it.
+    // Handle the preflight OPTIONS request
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
 
-    if (req.method === 'POST') {
-        try {
-            // We do nothing with the request body here.
-            // We just log that we received the request and send success.
-            console.log("POST request received. Immediately sending success response.");
-            
-            return res.status(200).json({ message: 'ULTIMATE DEBUG SUCCESS: The API endpoint is running.' });
+    if (req.method !== 'POST') {
+        return res.status(405).json({ message: 'Method Not Allowed' });
+    }
 
-        } catch (error) {
-            console.error('This should not happen:', error);
-            return res.status(500).json({ message: 'An unexpected error occurred.' });
+    try {
+        const body = await getJsonBody(req);
+        const { rates } = body;
+
+        if (!rates || Object.keys(rates).length === 0) {
+            return res.status(400).json({ message: 'No valid rates data found in the request.' });
         }
-    } else {
-        // If it's not a POST or OPTIONS request, deny it.
-        return res.status(405).json({ message: `Method ${req.method} Not Allowed` });
+
+        const dataToSave = {
+            timestamp: new Date().toISOString(),
+            rates: rates,
+        };
+        
+        // Save the final data to the Vercel KV store.
+        await kv.set('current_rates', JSON.stringify(dataToSave));
+
+        return res.status(200).json({ message: 'Rates updated successfully in Vercel KV!' });
+
+    } catch (error) {
+        console.error('Error during rate update:', error.message);
+        return res.status(400).json({ message: error.message || 'An internal server error occurred.' });
     }
 }
-
