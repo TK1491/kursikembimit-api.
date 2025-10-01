@@ -1,27 +1,28 @@
 import { kv } from '@vercel/kv';
 
 export default async function handler(req, res) {
-    // Set CORS headers
+    // Set CORS headers to allow requests from any origin.
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
+    // Handle preflight OPTIONS request for CORS.
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
     
     try {
-        // Fetch the stored rates data from Vercel KV.
+        // Fetch the stored rates data from Vercel KV, which is a string.
         const dataString = await kv.get('current_rates');
 
         if (!dataString) {
             return res.status(404).json({ message: 'Rates not found. Please update them via the admin panel.' });
         }
 
-        // Parse the string data before sending it back.
+        // FIX: Parse the JSON string back into a JavaScript object before sending.
         const data = JSON.parse(dataString);
-        
-        // Send the data back to the client.
+
+        // Send the parsed data object back to the client.
         return res.status(200).json(data);
 
     } catch (error) {
@@ -29,3 +30,4 @@ export default async function handler(req, res) {
         return res.status(500).json({ message: 'Failed to fetch rates.' });
     }
 }
+
