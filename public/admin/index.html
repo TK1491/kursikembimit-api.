@@ -79,7 +79,8 @@
 
     function handleProcessText() {
         const rawText = document.getElementById('raw-text-input').value;
-        const lines = rawText.split('\\n');
+        // FIX: Split by the actual newline character '\n' instead of the string '\\n'
+        const lines = rawText.split('\n');
         const rates = {};
         const currencyRegex = /([A-Z]{3})[^0-9]+([\d.]+)[^0-9]+([\d.]+)/;
 
@@ -157,3 +158,4 @@
 
 </body>
 </html>
+
