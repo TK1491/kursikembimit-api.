@@ -1,0 +1,30 @@
+<!-- The HTML part is just a simple form -->
+<h1>Upload New Rates Photo</h1>
+<input type="file" id="photoInput" accept="image/*">
+<button onclick="uploadPhoto()">Upload and Process</button>
+<div id="status"></div>
+
+<!-- The JavaScript part handles the logic -->
+<script>
+    async function uploadPhoto() {
+        const fileInput = document.getElementById('photoInput');
+        const statusDiv = document.getElementById('status');
+        
+        // ... (code to check if a file is selected) ...
+
+        const file = fileInput.files[0];
+        // FormData is the standard way to send files over the web.
+        const formData = new FormData();
+        formData.append('ratePhoto', file);
+
+        statusDiv.textContent = 'Uploading and processing...';
+
+        // This is the key part: it sends the image data to our backend endpoint.
+        const response = await fetch('/api/update-rates', {
+            method: 'POST',
+            body: formData,
+        });
+        
+        // ... (code to show success or error message) ...
+    }
+</script>
