@@ -16,29 +16,25 @@ export default async function handler(req, res) {
     try {
         console.log("Attempting to fetch 'current_rates' from Redis...");
         
-        // Fetch the stored rates data directly from Upstash Redis.
-        const dataString = await redis.get('current_rates');
+        // Fetch the stored rates data. The Upstash SDK automatically parses it into an object.
+        const data = await redis.get('current_rates');
         
-        // --- ADDED FOR DEBUGGING ---
-        // Log the raw data we received from the database to Vercel's logs.
-        console.log("Raw dataString from Redis:", dataString);
+        console.log("Raw data from Redis:", data);
 
-        if (!dataString) {
+        if (!data) {
             console.log("No data found in Redis for key 'current_rates'.");
             return res.status(404).json({ message: 'Rates not found. Please update them via the admin panel.' });
         }
 
-        // Parse the JSON string back into a JavaScript object before sending.
-        const data = JSON.parse(dataString);
+        // FIX: We no longer need to parse the data, as the SDK does it for us.
+        // const data = JSON.parse(dataString);
         
-        console.log("Successfully parsed data. Sending to client.");
+        console.log("Data is already an object. Sending to client.");
 
         // Send the final data object back to the client.
         return res.status(200).json(data);
 
     } catch (error) {
-        // --- ADDED FOR DEBUGGING ---
-        // Log the specific error to Vercel's logs for better insight.
         console.error('Error in /api/rates:', error);
         return res.status(500).json({ message: 'Failed to fetch rates.' });
     }
