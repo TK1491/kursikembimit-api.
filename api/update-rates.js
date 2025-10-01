@@ -1,28 +1,8 @@
 import fs from 'fs/promises';
 import path from 'path';
 
-// Helper function to parse the JSON body from the request
-async function parseJsonBody(req) {
-    return new Promise((resolve, reject) => {
-        let body = '';
-        req.on('data', chunk => {
-            body += chunk.toString();
-        });
-        req.on('end', () => {
-            try {
-                resolve(JSON.parse(body));
-            } catch (error) {
-                reject(error);
-            }
-        });
-        req.on('error', (err) => {
-            reject(err);
-        });
-    });
-}
-
-
 // This is the main function Vercel will run when this endpoint is called.
+// We have removed the manual parseJsonBody helper and will rely on Vercel's built-in parser.
 export default async function handler(req, res) {
     // We only accept POST requests for updating data.
     if (req.method !== 'POST') {
@@ -31,9 +11,8 @@ export default async function handler(req, res) {
     }
 
     try {
-        // Manually parse the JSON data from the request body
-        const body = await parseJsonBody(req);
-        const { rates } = body;
+        // Vercel automatically parses the JSON body and makes it available here.
+        const { rates } = req.body;
 
         if (!rates || Object.keys(rates).length === 0) {
             return res.status(400).json({ message: 'No rates data provided.' });
@@ -54,8 +33,9 @@ export default async function handler(req, res) {
         return res.status(200).json({ message: 'Rates updated successfully.' });
 
     } catch (error) {
+        // If req.body is not valid JSON, the error will be caught here.
         console.error('Error updating rates:', error);
-        return res.status(500).json({ message: 'Failed to update rates.' });
+        return res.status(500).json({ message: 'Failed to update rates. Please check server logs.' });
     }
 }
 
