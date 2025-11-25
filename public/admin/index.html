@@ -62,24 +62,45 @@
 </div>
 
 <script>
-    const password = "Luxtravel2025";
     let parsedRates = {};
 
-    function handleLogin() {
+    async function handleLogin() {
         const input = document.getElementById('password-input').value;
         const loginError = document.getElementById('login-error');
-        if (input === password) {
-            document.getElementById('login-container').style.display = 'none';
-            document.getElementById('uploader-container').style.display = 'block';
-            loginError.style.display = 'none';
-        } else {
+        const loginBtn = document.querySelector('#login-container button');
+        
+        loginBtn.disabled = true;
+        loginBtn.textContent = "Checking...";
+
+        try {
+            // Ask the server if the password is correct
+            const response = await fetch('/api/check-auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: input })
+            });
+            
+            const data = await response.json();
+
+            if (data.success) {
+                document.getElementById('login-container').style.display = 'none';
+                document.getElementById('uploader-container').style.display = 'block';
+                loginError.style.display = 'none';
+            } else {
+                loginError.style.display = 'block';
+            }
+        } catch (error) {
+            console.error("Login check failed:", error);
+            loginError.textContent = "System error. Please try again.";
             loginError.style.display = 'block';
+        } finally {
+            loginBtn.disabled = false;
+            loginBtn.textContent = "Login";
         }
     }
 
     function handleProcessText() {
         const rawText = document.getElementById('raw-text-input').value;
-        // FIX: Split by the actual newline character '\n' instead of the string '\\n'
         const lines = rawText.split('\n');
         const rates = {};
         const currencyRegex = /([A-Z]{3})[^0-9]+([\d.]+)[^0-9]+([\d.]+)/;
@@ -134,7 +155,8 @@
                 },
                 body: JSON.stringify({ 
                     rates: parsedRates,
-                    password: document.getElementById('password-input').value // Send password for backend verification
+                    // We send the password again to be verified by the update endpoint
+                    password: document.getElementById('password-input').value 
                 }),
             });
 
@@ -158,4 +180,3 @@
 
 </body>
 </html>
-
